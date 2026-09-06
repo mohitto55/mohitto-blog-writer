@@ -396,7 +396,7 @@ class JekyllThemeService {
         try {
           final content = await repository.readPost(post.name);
           templates.add(PostTemplate(
-            name: post.name.replaceFirst(RegExp(r'\.md$'), ''),
+            name: templateDisplayName(post.name),
             path: post.name,
             body: JekyllPost.parse(content).body.trimLeft(),
           ));
@@ -413,6 +413,16 @@ class JekyllThemeService {
     templates.sort((a, b) => a.name.compareTo(b.name));
 
     return _PostScan(categories: categories, tags: sortedTags, templates: templates);
+  }
+
+  /// `템플릿 - 개념 정리.md` → `개념 정리`, `문제풀이 템플릿.md` → `문제풀이`
+  static String templateDisplayName(String fileName) {
+    var name = fileName.replaceFirst(RegExp(r'\.md$', caseSensitive: false), '');
+    name = name.replaceFirst(RegExp(r'^\s*(템플릿|template)\s*[-_:]\s*', caseSensitive: false), '');
+    // 접미사는 구분자나 공백이 있을 때만 뗀다 (`z템플릿` 은 그대로)
+    name = name.replaceFirst(RegExp(r'(\s*[-_:]\s*|\s+)(템플릿|template)\s*$', caseSensitive: false), '');
+    name = name.trim();
+    return name.isEmpty ? fileName.replaceFirst(RegExp(r'\.md$'), '') : name;
   }
 
   static Map<String, String> _readFrontmatterLines(String content) {

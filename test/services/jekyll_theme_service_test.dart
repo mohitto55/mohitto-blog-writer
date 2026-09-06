@@ -135,6 +135,8 @@ void main() {
 
     expect(theme.templates.length, 1);
     expect(theme.templates.first.name, 'z템플릿');
+    expect(JekyllThemeService.templateDisplayName('템플릿 - 개념 정리.md'), '개념 정리');
+    expect(JekyllThemeService.templateDisplayName('문제풀이 템플릿.md'), '문제풀이');
     expect(theme.templates.first.body, startsWith('<div class="Reference">'));
   });
 
