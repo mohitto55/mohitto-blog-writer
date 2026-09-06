@@ -1,0 +1,124 @@
+# 태그(v1.2.3)를 푸시하면 Windows zip + Android APK 를 GitHub Release 에 올리고,
+# 웹(PWA) 빌드를 gh-pages 브랜치에 배포한다.
+#
+# 필요한 저장소 설정
+#   Settings → Secrets and variables → Actions
+#     ANDROID_KEYSTORE_BASE64 : android/app/upload-keystore.jks 를 base64 로 인코딩한 값
+#     ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD, ANDROID_KEY_ALIAS
+#   Settings → Pages → Source: "Deploy from a branch" / Branch: gh-pages
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.v.outputs.name }}
+      number: ${{ steps.v.outputs.number }}
+    steps:
+      - id: v
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == v* ]]; then
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=0.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "number=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: flutter build windows --release --build-name=${{ needs.version.outputs.name }} --build-number=${{ needs.version.outputs.number }}
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath MohittoBlogWriter-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: MohittoBlogWriter-windows-x64.zip
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Restore signing key
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        shell: bash
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          EOF
+      - run: flutter pub get
+      - run: flutter build apk --release --build-name=${{ needs.version.outputs.name }} --build-number=${{ needs.version.outputs.number }}
+      - run: cp build/app/outputs/flutter-apk/app-release.apk MohittoBlogWriter-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: MohittoBlogWriter-android.apk
+
+  web:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --build-name=${{ needs.version.outputs.name }} --build-number=${{ needs.version.outputs.number }}
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          force_orphan: true
+
+  release:
+    needs: [version, windows, android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/windows/MohittoBlogWriter-windows-x64.zip
+            dist/android/MohittoBlogWriter-android.apk
+          generate_release_notes: true
