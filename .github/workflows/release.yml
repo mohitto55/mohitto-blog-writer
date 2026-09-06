@@ -38,7 +38,8 @@ jobs:
 
   windows:
     needs: version
-    runs-on: windows-latest
+    # windows-latest 에는 VS 2026 이 있어 Flutter 3.35 가 생성기를 잘못 고른다 → VS 2022 이미지 고정
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
