@@ -230,9 +230,10 @@ class JekyllPost {
     return isDraftFileName(fileName) ? fileName.substring(1) : fileName;
   }
 
-  /// Jekyll 의 `:title` 슬러그 (파일명 제목 부분 기준)
+  /// Jekyll 의 `:title` 슬러그 (파일명 제목 부분 기준).
+  /// 이 블로그(GitHub Pages 의 Jekyll)는 대소문자를 유지한다: `[Backend] BFF 개념` → `Backend-BFF-개념`
   static String slugFromFileName(String fileName) {
-    final titlePart = titlePartOfFileName(fileName).toLowerCase();
+    final titlePart = titlePartOfFileName(fileName);
     final slug = titlePart
         .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '-')
         .replaceAll(RegExp(r'^-+|-+$'), '');

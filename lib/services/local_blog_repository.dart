@@ -107,6 +107,13 @@ class LocalBlogRepository implements BlogRepository {
     return result;
   }
 
+  /// git 저장소면 `git pull --ff-only` 로 다른 기기(폰)에서 올린 커밋을 받아온다. 실패해도 무시.
   @override
-  Future<void> refresh() async {}
+  Future<void> refresh() async {
+    if (!await Directory(p.join(blogPath, '.git')).exists()) return;
+    try {
+      await Process.run('git', ['pull', '--ff-only', '--quiet'], workingDirectory: blogPath, runInShell: true)
+          .timeout(const Duration(seconds: 30));
+    } catch (_) {}
+  }
 }

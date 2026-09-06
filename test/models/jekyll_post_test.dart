@@ -120,8 +120,9 @@ void main() {
     });
 
     test('Jekyll 슬러그와 로컬 URL 을 만든다', () {
-      expect(JekyllPost.slugFromFileName('2024-12-12-[Geometry]Line Intersection.md'), 'geometry-line-intersection');
-      expect(JekyllPost.slugFromFileName('2024-03-13-시간 복잡도 BigO.md'), '시간-복잡도-bigo');
+      expect(JekyllPost.slugFromFileName('2024-12-12-[Geometry]Line Intersection.md'), 'Geometry-Line-Intersection');
+      expect(JekyllPost.slugFromFileName('2026-06-05-[Backend] BFF 개념과 서비스 적용에 대한 생각.md'), 'Backend-BFF-개념과-서비스-적용에-대한-생각');
+      expect(JekyllPost.slugFromFileName('2024-03-13-시간 복잡도 BigO.md'), '시간-복잡도-BigO');
       expect(
         JekyllPost.localUrlPath(fileName: '2024-03-13-지라사용법.md', category: 'jira'),
         '/jira/지라사용법/',
