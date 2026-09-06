@@ -2,6 +2,9 @@
 
 Jekyll(minimal-mistakes) 블로그 글을 쓰는 앱. Windows / Android / 웹(PWA) 에서 같은 코드로 동작한다.
 
+- **웹 앱 (폰에서 바로 사용):** https://mohitto55.github.io/mohitto-blog-writer/
+- **Windows zip / Android APK:** https://github.com/mohitto55/mohitto-blog-writer/releases/latest
+
 - **Windows**: 로컬에 clone 한 블로그 폴더에 저장하고, Jekyll 서버 미리보기와 git push 를 앱에서 처리
 - **Android / 웹**: GitHub API 로 저장소를 직접 읽고, 저장 = 커밋. GitHub Pages 가 자동으로 다시 빌드
 - 블로그의 SCSS 를 스캔해 커스텀 콜아웃(`callout-*`, `Reference`)을 툴바 버튼과 미리보기 색상으로 반영
