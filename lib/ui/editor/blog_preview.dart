@@ -207,21 +207,34 @@ class BlogMarkdownBody extends StatelessWidget {
 
   Widget _buildImage(Uri uri, String? alt) {
     Widget image;
+    final raw = uri.toString().trim();
+    if (raw.isEmpty) {
+      return _placeholder(Icons.add_photo_alternate_outlined, '이미지 주소를 넣으세요: ![${alt ?? '설명'}](주소)');
+    }
     if (uri.scheme == 'http' || uri.scheme == 'https') {
-      image = Image.network(uri.toString(), errorBuilder: (_, __, ___) => _brokenImage(alt));
+      // 웹에서는 CORS 헤더가 없는 외부 이미지(GitHub 첨부 등)를 <img> 태그로 대신 불러온다
+      image = Image.network(
+        raw,
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+        errorBuilder: (_, __, ___) => _brokenImage(raw),
+      );
     } else if (theme.blogPath.isNotEmpty) {
       final rel = uri.path.startsWith('/') ? uri.path.substring(1) : uri.path;
       final file = File(p.join(theme.blogPath, rel.replaceAll('/', p.separator)));
       if (file.existsSync()) {
         image = Image.file(file);
       } else {
-        image = _brokenImage(alt ?? uri.toString());
+        image = _brokenImage(raw);
       }
     } else if (theme.assetBaseUrl != null) {
       final rel = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
-      image = Image.network('${theme.assetBaseUrl}$rel', errorBuilder: (_, __, ___) => _brokenImage(alt ?? uri.toString()));
+      image = Image.network(
+        '${theme.assetBaseUrl}$rel',
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+        errorBuilder: (_, __, ___) => _brokenImage(raw),
+      );
     } else {
-      image = _brokenImage(alt ?? uri.toString());
+      image = _brokenImage(raw);
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -229,7 +242,27 @@ class BlogMarkdownBody extends StatelessWidget {
     );
   }
 
-  Widget _brokenImage(String? alt) {
+  Widget _placeholder(IconData icon, String text) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF1F1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFD0D5D4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF8A9491)),
+          const SizedBox(width: 8),
+          Flexible(child: Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF8A9491)))),
+        ],
+      ),
+    );
+  }
+
+  Widget _brokenImage(String? src) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -242,7 +275,7 @@ class BlogMarkdownBody extends StatelessWidget {
         children: [
           const Icon(Icons.broken_image_outlined, size: 18, color: Color(0xFF8A9491)),
           const SizedBox(width: 8),
-          Flexible(child: Text('이미지를 찾을 수 없음: ${alt ?? ''}', style: const TextStyle(fontSize: 12, color: Color(0xFF8A9491)))),
+          Flexible(child: Text('이미지를 불러오지 못했습니다: ${src ?? ''}', style: const TextStyle(fontSize: 12, color: Color(0xFF8A9491)))),
         ],
       ),
     );
