@@ -275,7 +275,10 @@ class EditorActions {
   static final RegExp _listMarker = RegExp(r'^(\s*)([-*+]\s+(?:\[[ xX]\]\s+)?|\d+\.\s+|>\s?)');
 
   /// Enter: 목록/인용 마커를 다음 줄로 이어간다. 빈 항목이면 마커를 제거한다.
-  static TextEditingValue handleEnter(TextEditingValue v) {
+  ///
+  /// [paragraphBreak] 가 true 면 일반 문장에서 Enter 는 새 문단(빈 줄 포함)을 만든다.
+  /// kramdown 은 줄바꿈 하나를 띄어쓰기로 보기 때문에, 블로그에서 보이는 줄바꿈은 빈 줄이어야 한다.
+  static TextEditingValue handleEnter(TextEditingValue v, {bool paragraphBreak = false}) {
     final sel = _normalized(v);
     final text = v.text;
     final ls = lineStart(text, sel.start);
@@ -307,8 +310,19 @@ class EditorActions {
 
     // 일반 줄: 들여쓰기 유지
     final indent = RegExp(r'^\s*').firstMatch(line)!.group(0)!;
+    if (paragraphBreak) {
+      final isTableRow = line.trimLeft().startsWith('|');
+      final after = text.substring(sel.end);
+      if (line.trim().isNotEmpty && !isTableRow && indent.isEmpty) {
+        // 뒤에 이미 빈 줄이 있으면 하나만 추가
+        return insert(v, after.startsWith('\n\n') ? '\n' : '\n\n');
+      }
+    }
     return insert(v, '\n$indent');
   }
+
+  /// Shift+Enter: 블로그에서 실제로 줄이 바뀌는 `<br>` 하드 브레이크
+  static TextEditingValue hardBreak(TextEditingValue v) => insert(v, '<br>\n');
 
   /// Tab: 선택이 여러 줄이면 모두 들여쓰기, 아니면 공백 삽입
   static TextEditingValue indent(TextEditingValue v) {

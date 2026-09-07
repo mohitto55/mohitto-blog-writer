@@ -417,6 +417,7 @@ class LivePreviewEditorState extends State<LivePreviewEditor> {
             style: style,
             contentPadding: padding,
             hintText: block.virtual ? '내용을 입력하세요' : '',
+            paragraphEnter: block.type != MdBlockType.code && block.type != MdBlockType.html,
             onNavigatePrev: _navigatePrev,
             onNavigateNext: _navigateNext,
             onBackspaceAtStart: _mergeWithPrevious,

@@ -42,6 +42,9 @@ class MarkdownEditor extends StatefulWidget {
   final VoidCallback? onDeleteAtEnd;
   final VoidCallback? onEscape;
 
+  /// true 면 Enter 가 새 문단(빈 줄)을 만들고 Shift+Enter 가 `<br>` 줄바꿈을 넣는다 (라이브 편집의 문단 블록)
+  final bool paragraphEnter;
+
   const MarkdownEditor({
     super.key,
     required this.controller,
@@ -62,6 +65,7 @@ class MarkdownEditor extends StatefulWidget {
     this.onBackspaceAtStart,
     this.onDeleteAtEnd,
     this.onEscape,
+    this.paragraphEnter = false,
   });
 
   @override
@@ -72,18 +76,22 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return KeyEventResult.ignored;
 
-    final value = widget.controller.value;
-    // 한글 등 IME 조합 중에는 개입하지 않는다 (조합이 깨지지 않도록)
-    if (value.composing.isValid && !value.composing.isCollapsed) {
-      return KeyEventResult.ignored;
-    }
-
+    var value = widget.controller.value;
     final keyboard = HardwareKeyboard.instance;
     final ctrl = keyboard.isControlPressed || keyboard.isMetaPressed;
     final shift = keyboard.isShiftPressed;
     final alt = keyboard.isAltPressed;
     final key = event.logicalKey;
     final plain = !ctrl && !shift && !alt;
+    final isEnter = key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter;
+
+    // 한글 등 IME 조합 중에는 개입하지 않는다 (조합이 깨지지 않도록).
+    // 단, Enter 는 조합을 확정한 뒤 바로 줄바꿈까지 처리해 "Enter 두 번" 을 없앤다.
+    if (value.composing.isValid && !value.composing.isCollapsed) {
+      if (!isEnter || ctrl || alt) return KeyEventResult.ignored;
+      value = TextEditingValue(text: value.text, selection: value.selection);
+      widget.controller.value = value;
+    }
 
     // 저장
     if (ctrl && !shift && !alt && key == LogicalKeyboardKey.keyS) {
@@ -109,8 +117,12 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       return KeyEventResult.handled;
     }
 
-    if ((key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) && plain) {
-      _apply(EditorActions.handleEnter(value));
+    if (isEnter && plain) {
+      _apply(EditorActions.handleEnter(value, paragraphBreak: widget.paragraphEnter));
+      return KeyEventResult.handled;
+    }
+    if (isEnter && shift && !ctrl && !alt && widget.paragraphEnter) {
+      _apply(EditorActions.hardBreak(value));
       return KeyEventResult.handled;
     }
 

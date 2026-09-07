@@ -70,7 +70,8 @@ WorkspaceScreen (screens/workspace_screen.dart)   ← 메인 셸: NavigationRail
   - `YYYY-MM-DD-제목.md` 게시, `mYYYY-MM-DD-…` 는 Jekyll 이 날짜를 못 읽어 숨겨지는 초안, 날짜 없는 `*템플릿*.md` 는 템플릿
   - title / categories / tags 외의 frontmatter 줄은 `extraFrontmatterLines` 로 원문 보존
 - 에디터 단축키: Ctrl+S 저장, Ctrl+B/I/E 굵게/기울임/코드, Ctrl+K 링크, Ctrl+Shift+K 코드블록, Ctrl+1~4 제목, Tab/Shift+Tab 들여쓰기, Enter 목록 이어가기, Alt+↑↓ 줄 이동, Ctrl+Shift+D 줄 복제.
-- 한글 IME 조합 중(`composing` 유효)에는 커스텀 키 처리를 하지 않는다 (markdown_editor.dart).
+- 한글 IME 조합 중(`composing` 유효)에는 커스텀 키 처리를 하지 않는다 (markdown_editor.dart). 예외는 Enter: 조합을 확정한 뒤 바로 줄바꿈까지 처리한다.
+- 라이브 편집의 문단/제목 블록은 `paragraphEnter`: Enter = 빈 줄(새 문단), Shift+Enter = `<br>`. kramdown 이 줄바꿈 하나를 띄어쓰기로 보기 때문. 코드/HTML 블록과 소스 모드는 Enter = `\n`.
 
 ### 1. Service Layer (lib/services/)
 

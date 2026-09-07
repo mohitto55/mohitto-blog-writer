@@ -75,6 +75,19 @@ void main() {
       expect(r.text, '- a\n');
     });
 
+    test('문단 모드: 일반 문장에서 Enter 는 빈 줄로 새 문단을 만든다', () {
+      expect(EditorActions.handleEnter(v('첫 문장'), paragraphBreak: true).text, '첫 문장\n\n');
+      // 문장 중간에서 나누기
+      expect(EditorActions.handleEnter(v('앞뒤', start: 1), paragraphBreak: true).text, '앞\n\n뒤');
+      // 뒤에 이미 빈 줄이 있으면 하나만
+      expect(EditorActions.handleEnter(v('앞\n\n뒤', start: 1), paragraphBreak: true).text, '앞\n\n\n뒤');
+      // 목록/표/빈 줄은 문단 모드여도 그대로
+      expect(EditorActions.handleEnter(v('- 항목'), paragraphBreak: true).text, '- 항목\n- ');
+      expect(EditorActions.handleEnter(v('| a | b |'), paragraphBreak: true).text, '| a | b |\n');
+      expect(EditorActions.handleEnter(v(''), paragraphBreak: true).text, '\n');
+      expect(EditorActions.hardBreak(v('a')).text, 'a<br>\n');
+    });
+
     test('일반 줄은 들여쓰기를 유지한다', () {
       final r = EditorActions.handleEnter(v('  code'));
       expect(r.text, '  code\n  ');
