@@ -133,4 +133,40 @@ void main() {
       );
     });
   });
+
+  group('책 시리즈', () {
+    test('series / series_order 를 읽고 tags 다음에 다시 쓴다', () {
+      final post = JekyllPost.parse('---\n'
+          'title: "[C++] 3장"\n'
+          'categories: cpp\n'
+          'tags: [cpp]\n'
+          'series: "Effective C++"\n'
+          'series_order: 3\n'
+          'toc: true\n'
+          '---\n'
+          '\n'
+          '본문');
+      expect(post.series, 'Effective C++');
+      expect(post.seriesOrder, 3);
+      expect(post.extraFrontmatterLines, ['toc: true']);
+      expect(
+        post.serialize(),
+        '---\n'
+        'title: "[C++] 3장"\n'
+        'categories: cpp\n'
+        'tags: [cpp]\n'
+        'series: "Effective C++"\n'
+        'series_order: 3\n'
+        'toc: true\n'
+        '---\n'
+        '\n'
+        '본문',
+      );
+    });
+
+    test('시리즈가 없으면 series 줄을 쓰지 않는다', () {
+      final post = JekyllPost(title: 't', seriesOrder: 2);
+      expect(post.serialize().contains('series'), isFalse);
+    });
+  });
 }

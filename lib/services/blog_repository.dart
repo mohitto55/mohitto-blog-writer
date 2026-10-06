@@ -8,6 +8,8 @@ class PostInfo {
   final String title;
   final String category;
   final List<String> tags;
+  final String series;
+  final int? seriesOrder;
   final DateTime? date;
   final DateTime modified;
 
@@ -16,6 +18,8 @@ class PostInfo {
     required this.title,
     required this.category,
     required this.tags,
+    this.series = '',
+    this.seriesOrder,
     required this.date,
     required this.modified,
   });
@@ -41,6 +45,8 @@ class PostInfo {
       title: post.fullTitle,
       category: post.category,
       tags: post.tags,
+      series: post.series,
+      seriesOrder: post.seriesOrder,
       date: date,
       modified: modified ?? date ?? DateTime.fromMillisecondsSinceEpoch(0),
     );

@@ -102,6 +102,20 @@ class BlogCategory {
   String toString() => slug;
 }
 
+/// `_posts` frontmatter 의 `series:` 로 묶인 책 시리즈
+class BlogSeries {
+  final String name;
+  final int count;
+
+  /// 시리즈 안에서 가장 큰 `series_order` (없으면 0)
+  final int maxOrder;
+
+  const BlogSeries({required this.name, required this.count, required this.maxOrder});
+
+  @override
+  String toString() => name;
+}
+
 /// `_posts` 폴더의 템플릿 파일 (파일명에 '템플릿'/'template' 포함)
 class PostTemplate {
   final String name;
@@ -118,6 +132,7 @@ class JekyllTheme {
   final List<BlogBlockStyle> blockStyles;
   final List<BlogCategory> categories;
   final List<String> tags;
+  final List<BlogSeries> series;
   final List<PostTemplate> templates;
   final bool hasCodeCompareBlocks;
   final String permalinkPattern;
@@ -134,6 +149,7 @@ class JekyllTheme {
     required this.blockStyles,
     required this.categories,
     required this.tags,
+    this.series = const [],
     required this.templates,
     required this.hasCodeCompareBlocks,
     required this.permalinkPattern,

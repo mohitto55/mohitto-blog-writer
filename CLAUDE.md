@@ -69,6 +69,7 @@ WorkspaceScreen (screens/workspace_screen.dart)   ← 메인 셸: NavigationRail
 - **JekyllPost** (models/jekyll_post.dart): `_posts` 파일 파싱/직렬화와 파일명 규칙.
   - `YYYY-MM-DD-제목.md` 게시, `mYYYY-MM-DD-…` 는 Jekyll 이 날짜를 못 읽어 숨겨지는 초안, 날짜 없는 `*템플릿*.md` 는 템플릿
   - title / categories / tags 외의 frontmatter 줄은 `extraFrontmatterLines` 로 원문 보존
+  - 책 시리즈: `series: "책 이름"` + `series_order: N`. 블로그의 `_includes/series-nav.html` (글 위 목차)과 `/books/` 페이지가 이 키로 묶는다. 테마 스캔이 `BlogSeries` (이름, 글 수, 최대 순서)를 모아 에디터 시리즈 칸 자동완성과 다음 순서 채우기에 쓴다.
 - 에디터 단축키: Ctrl+S 저장, Ctrl+B/I/E 굵게/기울임/코드, Ctrl+K 링크, Ctrl+Shift+K 코드블록, Ctrl+1~4 제목, Tab/Shift+Tab 들여쓰기, Enter 목록 이어가기, Alt+↑↓ 줄 이동, Ctrl+Shift+D 줄 복제.
 - 한글 IME 조합 중(`composing` 유효)에는 커스텀 키 처리를 하지 않는다 (markdown_editor.dart). 예외는 Enter: 조합을 확정한 뒤 바로 줄바꿈까지 처리한다.
 - 라이브 편집의 문단/제목 블록은 `paragraphEnter`: Enter = 빈 줄(새 문단), Shift+Enter = `<br>`. kramdown 이 줄바꿈 하나를 띄어쓰기로 보기 때문. 코드/HTML 블록과 소스 모드는 Enter = `\n`.

@@ -61,6 +61,9 @@ class PostEditorState extends ConsumerState<PostEditor> {
   final _titleController = TextEditingController();
   final _categoryController = TextEditingController();
   final _tagInputController = TextEditingController();
+  final _seriesController = TextEditingController();
+  final _seriesOrderController = TextEditingController();
+  final _seriesFocus = FocusNode();
   final _bodyController = TextEditingController();
   final _bodyFocus = FocusNode();
   final _categoryFocus = FocusNode();
@@ -121,6 +124,9 @@ class PostEditorState extends ConsumerState<PostEditor> {
     _titleController.dispose();
     _categoryController.dispose();
     _tagInputController.dispose();
+    _seriesController.dispose();
+    _seriesOrderController.dispose();
+    _seriesFocus.dispose();
     _bodyController.dispose();
     _bodyFocus.dispose();
     _categoryFocus.dispose();
@@ -145,7 +151,7 @@ class PostEditorState extends ConsumerState<PostEditor> {
     try {
       if (_name == null) {
         _post = JekyllPost(body: widget.initialTemplate?.body ?? '');
-        _isDraft = false;
+        _isDraft = true; // 새 글은 초안으로 시작
         _date = DateTime.now();
       } else {
         final raw = await _repo.readPost(_name!);
@@ -166,6 +172,8 @@ class PostEditorState extends ConsumerState<PostEditor> {
     _subjectController.text = _post.subject;
     _titleController.text = _post.title;
     _categoryController.text = _post.category;
+    _seriesController.text = _post.series;
+    _seriesOrderController.text = _post.seriesOrder?.toString() ?? '';
     _bodyController.value = TextEditingValue(
       text: _post.body,
       selection: const TextSelection.collapsed(offset: 0),
@@ -207,6 +215,8 @@ class PostEditorState extends ConsumerState<PostEditor> {
     _post.subject = _subjectController.text.trim();
     _post.title = _titleController.text.trim();
     _post.category = _categoryController.text.trim();
+    _post.series = _seriesController.text.trim();
+    _post.seriesOrder = _post.series.isEmpty ? null : int.tryParse(_seriesOrderController.text.trim());
   }
 
   // ---------------------------------------------------------------------------
@@ -623,6 +633,8 @@ class PostEditorState extends ConsumerState<PostEditor> {
               const SizedBox(width: 10),
               Expanded(child: _buildTagsField()),
               const SizedBox(width: 10),
+              SizedBox(width: 260, child: _buildSeriesField()),
+              const SizedBox(width: 10),
               if (_name == null) _dateButton(),
               const SizedBox(width: 10),
               _draftSwitch(),
@@ -689,6 +701,8 @@ class PostEditorState extends ConsumerState<PostEditor> {
           ),
           const SizedBox(height: 8),
           _buildTagsField(),
+          const SizedBox(height: 8),
+          _buildSeriesField(),
         ],
       ),
     );
@@ -824,6 +838,95 @@ class PostEditorState extends ConsumerState<PostEditor> {
       ],
       selected: {_viewMode},
       onSelectionChanged: (s) => setState(() => _viewMode = s.first),
+    );
+  }
+
+  /// 책 시리즈 이름 + 순서. 기존 시리즈를 고르면 순서를 "마지막 + 1" 로 채운다.
+  Widget _buildSeriesField() {
+    final allSeries = widget.theme.series;
+    final seriesField = RawAutocomplete<BlogSeries>(
+      textEditingController: _seriesController,
+      focusNode: _seriesFocus,
+      displayStringForOption: (s) => s.name,
+      optionsBuilder: (value) {
+        final q = value.text.toLowerCase();
+        if (q.isEmpty) return allSeries;
+        return allSeries.where((s) => s.name.toLowerCase().contains(q));
+      },
+      onSelected: (s) {
+        _seriesController.text = s.name;
+        if (_seriesOrderController.text.trim().isEmpty || _post.series != s.name) {
+          _seriesOrderController.text = '${s.maxOrder + 1}';
+        }
+        _setDirty(true);
+      },
+      fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          style: const TextStyle(fontSize: 13),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.menu_book_outlined, size: 18),
+            hintText: '책 시리즈',
+            isDense: true,
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          ),
+          onChanged: (_) => _setDirty(true),
+          onSubmitted: (_) => onSubmit(),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(6),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 280, maxWidth: 260),
+              child: ListView(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                children: [
+                  for (final s in options)
+                    ListTile(
+                      dense: true,
+                      title: Text(s.name),
+                      subtitle: Text('글 ${s.count}편 · 다음 순서 ${s.maxOrder + 1}', style: const TextStyle(fontSize: 11)),
+                      onTap: () => onSelected(s),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return Row(
+      children: [
+        Expanded(child: seriesField),
+        const SizedBox(width: 6),
+        SizedBox(
+          width: 64,
+          child: Tooltip(
+            message: '시리즈 안에서의 순서 (series_order)',
+            child: TextField(
+              controller: _seriesOrderController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(fontSize: 13),
+              decoration: const InputDecoration(
+                hintText: '순서',
+                isDense: true,
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              ),
+              onChanged: (_) => _setDirty(true),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -9,7 +9,7 @@ import 'blog_repository.dart';
 /// - `_sass/**/*.scss` : 커스텀 콜아웃 클래스(`.callout-*`, `.Reference`)와 색상
 /// - `_config.yml` + `_sass/minimal-mistakes/skins/_*.scss` : 스킨 색상, 사이트 URL, permalink
 /// - `_pages/categories/*.md` : 카테고리 목록
-/// - `_posts/*.md` : 사용 중인 태그, 템플릿 파일
+/// - `_posts/*.md` : 사용 중인 태그, 책 시리즈, 템플릿 파일
 class JekyllThemeService {
   final BlogRepository repository;
 
@@ -38,6 +38,7 @@ class JekyllThemeService {
       blockStyles: blocks.isEmpty ? fallback.blockStyles : blocks,
       categories: postScan.categories,
       tags: postScan.tags,
+      series: postScan.series,
       templates: postScan.templates,
       hasCodeCompareBlocks: hasCodeCompare,
       permalinkPattern: permalink,
@@ -375,6 +376,8 @@ class JekyllThemeService {
 
   Future<_PostScan> _scanPosts(List<BlogCategory> knownCategories) async {
     final tagCounts = <String, int>{};
+    final seriesCounts = <String, int>{};
+    final seriesMaxOrder = <String, int>{};
     final categorySlugs = <String, BlogCategory>{for (final c in knownCategories) c.slug: c};
     final templates = <PostTemplate>[];
 
@@ -388,6 +391,12 @@ class JekyllThemeService {
     for (final post in posts) {
       for (final t in post.tags) {
         tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+      }
+      final series = post.series.trim();
+      if (series.isNotEmpty && !post.isTemplate) {
+        seriesCounts[series] = (seriesCounts[series] ?? 0) + 1;
+        final order = post.seriesOrder ?? 0;
+        if (order > (seriesMaxOrder[series] ?? 0)) seriesMaxOrder[series] = order;
       }
       if (post.category.isNotEmpty) {
         categorySlugs.putIfAbsent(post.category, () => BlogCategory(slug: post.category, title: post.category));
@@ -411,8 +420,12 @@ class JekyllThemeService {
       });
     final categories = categorySlugs.values.toList()..sort((a, b) => a.slug.compareTo(b.slug));
     templates.sort((a, b) => a.name.compareTo(b.name));
+    final series = [
+      for (final e in seriesCounts.entries)
+        BlogSeries(name: e.key, count: e.value, maxOrder: seriesMaxOrder[e.key] ?? 0),
+    ]..sort((a, b) => a.name.compareTo(b.name));
 
-    return _PostScan(categories: categories, tags: sortedTags, templates: templates);
+    return _PostScan(categories: categories, tags: sortedTags, series: series, templates: templates);
   }
 
   /// `템플릿 - 개념 정리.md` → `개념 정리`, `문제풀이 템플릿.md` → `문제풀이`
@@ -459,7 +472,8 @@ class _ScssRule {
 class _PostScan {
   final List<BlogCategory> categories;
   final List<String> tags;
+  final List<BlogSeries> series;
   final List<PostTemplate> templates;
 
-  _PostScan({required this.categories, required this.tags, required this.templates});
+  _PostScan({required this.categories, required this.tags, required this.series, required this.templates});
 }

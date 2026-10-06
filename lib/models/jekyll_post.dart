@@ -11,6 +11,13 @@ class JekyllPost {
   String title;
   String category;
   List<String> tags;
+
+  /// 책 시리즈 이름 (`series:`). 비어 있으면 시리즈 글이 아님
+  String series;
+
+  /// 시리즈 안에서의 순서 (`series_order:`)
+  int? seriesOrder;
+
   String body;
 
   /// 앱이 직접 다루지 않는 frontmatter 줄들 (원문 그대로 보존)
@@ -21,6 +28,8 @@ class JekyllPost {
     this.title = '',
     this.category = '',
     List<String>? tags,
+    this.series = '',
+    this.seriesOrder,
     this.body = '',
     List<String>? extraFrontmatterLines,
   })  : tags = tags ?? [],
@@ -93,6 +102,10 @@ class JekyllPost {
           post.category = list.isEmpty ? '' : list.first;
         case 'tags':
           post.tags = _parseInlineList(value);
+        case 'series':
+          post.series = _unquote(value);
+        case 'series_order':
+          post.seriesOrder = int.tryParse(_unquote(value));
         default:
           post.extraFrontmatterLines.add(line);
       }
@@ -104,7 +117,7 @@ class JekyllPost {
     return post;
   }
 
-  /// 최근 포스트 형식을 따른다: `date`, `published` → `title` → `categories` → `tags` → 나머지
+  /// 최근 포스트 형식을 따른다: `date`, `published` → `title` → `categories` → `tags` → `series` → 나머지
   String serialize() {
     final buffer = StringBuffer();
     buffer.writeln('---');
@@ -116,6 +129,10 @@ class JekyllPost {
     buffer.writeln('title: "${fullTitle.replaceAll('"', r'\"')}"');
     buffer.writeln('categories: ${category.trim()}');
     buffer.writeln('tags: [${tags.map((t) => t.trim()).where((t) => t.isNotEmpty).join(', ')}]');
+    if (series.trim().isNotEmpty) {
+      buffer.writeln('series: "${series.trim().replaceAll('"', r'\"')}"');
+      if (seriesOrder != null) buffer.writeln('series_order: $seriesOrder');
+    }
     for (final line in trailing) {
       buffer.writeln(line);
     }
@@ -155,6 +172,8 @@ class JekyllPost {
       title: title,
       category: category,
       tags: List.of(tags),
+      series: series,
+      seriesOrder: seriesOrder,
       body: body,
       extraFrontmatterLines: List.of(extraFrontmatterLines),
     );

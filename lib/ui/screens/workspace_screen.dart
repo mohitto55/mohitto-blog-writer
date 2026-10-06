@@ -15,7 +15,7 @@ import 'settings_screen.dart';
 
 enum _Section { posts, import, settings }
 
-enum _PostFilter { all, published, draft, template }
+enum _PostFilter { all, published, draft, series, template }
 
 /// 앱의 메인 셸.
 ///
@@ -98,7 +98,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   List<PostInfo> get _visiblePosts {
     final q = _searchController.text.trim().toLowerCase();
-    return _posts.where((e) {
+    final result = _posts.where((e) {
       switch (_filter) {
         case _PostFilter.all:
           break;
@@ -106,6 +106,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           if (!e.isPublished) return false;
         case _PostFilter.draft:
           if (!e.isDraft) return false;
+        case _PostFilter.series:
+          if (e.series.isEmpty || e.isTemplate) return false;
         case _PostFilter.template:
           if (!e.isTemplate) return false;
       }
@@ -113,8 +115,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       return e.title.toLowerCase().contains(q) ||
           e.name.toLowerCase().contains(q) ||
           e.category.toLowerCase().contains(q) ||
+          e.series.toLowerCase().contains(q) ||
           e.tags.any((t) => t.toLowerCase().contains(q));
     }).toList();
+    // 시리즈 보기는 책별로 묶고 순서대로
+    if (_filter == _PostFilter.series) {
+      result.sort((a, b) {
+        final bySeries = a.series.compareTo(b.series);
+        if (bySeries != 0) return bySeries;
+        return (a.seriesOrder ?? 1 << 30).compareTo(b.seriesOrder ?? 1 << 30);
+      });
+    }
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -643,6 +655,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         return '게시됨';
       case _PostFilter.draft:
         return '초안';
+      case _PostFilter.series:
+        return '시리즈';
       case _PostFilter.template:
         return '템플릿';
     }
@@ -710,6 +724,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   Icon(Icons.folder_outlined, size: 12, color: scheme.onSurfaceVariant),
                   const SizedBox(width: 2),
                   Text(entry.category, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+                  const SizedBox(width: 8),
+                ],
+                if (entry.series.isNotEmpty) ...[
+                  Icon(Icons.menu_book_outlined, size: 12, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      entry.seriesOrder == null ? entry.series : '${entry.series} #${entry.seriesOrder}',
+                      style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
